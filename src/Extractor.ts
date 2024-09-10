@@ -111,8 +111,27 @@ class CreditTransferExtractor extends BaseExtractor {
   }
 }
 
+class SalaryTransferExtractor extends BaseExtractor {
+  extractDate(): string | undefined {
+    const formatter = FormatterFactory.createFormatter(FormatterType.DATE);
+
+    const pattern = /il (\d{2}\/\d{2}\/\d{4}) hai ricevuto/i;
+    const match = this.content.match(pattern);
+    return match ? formatter.format(match[1]) : undefined;
+  }
+
+  extractAmount(): number | undefined {
+    return 0;
+  }
+
+  extractPayee(): Payee | undefined {
+    return undefined;
+  }
+}
+
 export enum ExtractorType {
   CREDIT,
+  SALARY,
   REGULAR,
   INSTANT,
   WITHDRAWAL,
@@ -120,6 +139,7 @@ export enum ExtractorType {
 
 type ExtractorMap = {
   [ExtractorType.CREDIT]: (content: string) => CreditTransferExtractor;
+  [ExtractorType.SALARY]: (content: string) => SalaryTransferExtractor;
   [ExtractorType.INSTANT]: (content: string) => InstantTransferExtractor;
   [ExtractorType.REGULAR]: (content: string) => RegularTransferExtractor;
   [ExtractorType.WITHDRAWAL]: (content: string) => WithdrawalTransferExtractor;
@@ -135,6 +155,8 @@ export class ExtractorFactory {
       new WithdrawalTransferExtractor(content),
     [ExtractorType.CREDIT]: (content: string) =>
       new CreditTransferExtractor(content),
+    [ExtractorType.SALARY]: (content: string) =>
+      new SalaryTransferExtractor(content),
   };
 
   private static isWithdrawalTransfer(content: string): boolean {
@@ -157,6 +179,11 @@ export class ExtractorFactory {
     return pattern.test(content);
   }
 
+  private static isSalaryTransfer(content: string): boolean {
+    const pattern = /hai ricevuto l.*accredito dello stipendio/i;
+    return pattern.test(content);
+  }
+
   private static getExtractorType(content: string): ExtractorType {
     const isWithdrawal = this.isWithdrawalTransfer(content);
     if (isWithdrawal) {
@@ -176,6 +203,11 @@ export class ExtractorFactory {
     const isCreditTransfer = this.isCreditTransfer(content);
     if (isCreditTransfer) {
       return ExtractorType.CREDIT;
+    }
+
+    const isSalaryTransfer = this.isSalaryTransfer(content);
+    if (isSalaryTransfer) {
+      return ExtractorType.SALARY;
     }
 
     throw new Error('Unable to determine extractor type');

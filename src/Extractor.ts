@@ -43,6 +43,28 @@ class PaymentTransferExtractor extends BaseExtractor {
   }
 }
 
+class RegularTransferExtractor extends BaseExtractor {
+  extractDate(): string | undefined {
+    const formatter = FormatterFactory.createFormatter(FormatterType.DATE);
+
+    const pattern = /Data valuta \* (\d{2}\/\d{2}\/\d{4})/i;
+    const match = this.content.match(pattern);
+    return match ? formatter.format(match[1]) : undefined;
+  }
+
+  extractAmount(): number | undefined {
+    const formatter = FormatterFactory.createFormatter(FormatterType.AMOUNT);
+
+    const pattern = /\*Importo \*(\d+,\d+) euro\*/i;
+    const match = this.content.match(pattern);
+    return match ? formatter.formatOutflow(match[1]) : undefined;
+  }
+
+  extractPayee(): Payee | undefined {
+    return undefined;
+  }
+}
+
 class WithdrawalTransferExtractor extends BaseExtractor {
   extractDate(): string | undefined {
     const formatter = FormatterFactory.createFormatter(FormatterType.DATE);
@@ -133,6 +155,7 @@ export enum ExtractorType {
   CREDIT,
   SALARY,
   PAYMENT,
+  REGULAR,
   INSTANT,
   WITHDRAWAL,
 }
@@ -142,6 +165,7 @@ type ExtractorMap = {
   [ExtractorType.SALARY]: (content: string) => SalaryTransferExtractor;
   [ExtractorType.INSTANT]: (content: string) => InstantTransferExtractor;
   [ExtractorType.PAYMENT]: (content: string) => PaymentTransferExtractor;
+  [ExtractorType.REGULAR]: (content: string) => RegularTransferExtractor;
   [ExtractorType.WITHDRAWAL]: (content: string) => WithdrawalTransferExtractor;
 };
 
@@ -151,6 +175,8 @@ export class ExtractorFactory {
       new InstantTransferExtractor(content),
     [ExtractorType.PAYMENT]: (content: string) =>
       new PaymentTransferExtractor(content),
+    [ExtractorType.REGULAR]: (content: string) =>
+      new RegularTransferExtractor(content),
     [ExtractorType.WITHDRAWAL]: (content: string) =>
       new WithdrawalTransferExtractor(content),
     [ExtractorType.CREDIT]: (content: string) =>
@@ -166,6 +192,11 @@ export class ExtractorFactory {
 
   private static isPaymentTransfer(content: string): boolean {
     const pattern = /pagamento di \*(\d+,\d+)\* \*EUR/i;
+    return pattern.test(content);
+  }
+
+  private static isRegularTransfer(content: string): boolean {
+    const pattern = /hai inserito un bonifico dal tuo conto/i;
     return pattern.test(content);
   }
 
@@ -198,6 +229,11 @@ export class ExtractorFactory {
     const isPaymentTransfer = this.isPaymentTransfer(content);
     if (isPaymentTransfer) {
       return ExtractorType.PAYMENT;
+    }
+
+    const isRegularTransfer = this.isRegularTransfer(content);
+    if (isRegularTransfer) {
+      return ExtractorType.REGULAR;
     }
 
     const isCreditTransfer = this.isCreditTransfer(content);

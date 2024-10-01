@@ -10,7 +10,7 @@ export abstract class BaseExtractor {
   abstract extractPayee(): Payee | undefined;
 }
 
-class RegularTransferExtractor extends BaseExtractor {
+class PaymentTransferExtractor extends BaseExtractor {
   extractDate(): string | undefined {
     const formatter = FormatterFactory.createFormatter(FormatterType.DATE);
 
@@ -132,7 +132,7 @@ class SalaryTransferExtractor extends BaseExtractor {
 export enum ExtractorType {
   CREDIT,
   SALARY,
-  REGULAR,
+  PAYMENT,
   INSTANT,
   WITHDRAWAL,
 }
@@ -141,7 +141,7 @@ type ExtractorMap = {
   [ExtractorType.CREDIT]: (content: string) => CreditTransferExtractor;
   [ExtractorType.SALARY]: (content: string) => SalaryTransferExtractor;
   [ExtractorType.INSTANT]: (content: string) => InstantTransferExtractor;
-  [ExtractorType.REGULAR]: (content: string) => RegularTransferExtractor;
+  [ExtractorType.PAYMENT]: (content: string) => PaymentTransferExtractor;
   [ExtractorType.WITHDRAWAL]: (content: string) => WithdrawalTransferExtractor;
 };
 
@@ -149,8 +149,8 @@ export class ExtractorFactory {
   private static extractors: ExtractorMap = {
     [ExtractorType.INSTANT]: (content: string) =>
       new InstantTransferExtractor(content),
-    [ExtractorType.REGULAR]: (content: string) =>
-      new RegularTransferExtractor(content),
+    [ExtractorType.PAYMENT]: (content: string) =>
+      new PaymentTransferExtractor(content),
     [ExtractorType.WITHDRAWAL]: (content: string) =>
       new WithdrawalTransferExtractor(content),
     [ExtractorType.CREDIT]: (content: string) =>
@@ -164,7 +164,7 @@ export class ExtractorFactory {
     return pattern.test(content);
   }
 
-  private static isRegularTransfer(content: string): boolean {
+  private static isPaymentTransfer(content: string): boolean {
     const pattern = /pagamento di \*(\d+,\d+)\* \*EUR/i;
     return pattern.test(content);
   }
@@ -195,9 +195,9 @@ export class ExtractorFactory {
       return ExtractorType.INSTANT;
     }
 
-    const isRegularTransfer = this.isRegularTransfer(content);
-    if (isRegularTransfer) {
-      return ExtractorType.REGULAR;
+    const isPaymentTransfer = this.isPaymentTransfer(content);
+    if (isPaymentTransfer) {
+      return ExtractorType.PAYMENT;
     }
 
     const isCreditTransfer = this.isCreditTransfer(content);

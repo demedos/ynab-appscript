@@ -71,8 +71,8 @@ export function processEmails() {
           amount,
           payee_id: payee?.id,
           payee_name: payee?.name,
-          cleared: 'uncleared',
-          approved: false,
+          cleared: 'cleared',
+          approved: true,
           import_id: generateImportId(amount, date, occurrence),
         });
       } else {

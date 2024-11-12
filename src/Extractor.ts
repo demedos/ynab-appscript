@@ -65,6 +65,28 @@ class RegularTransferExtractor extends BaseExtractor {
   }
 }
 
+class RecurringTransferExtractor extends BaseExtractor {
+  extractDate(): string | undefined {
+    const formatter = FormatterFactory.createFormatter(FormatterType.DATE);
+
+    const pattern = /Data di esecuzione \* (\d{2}\/\d{2}\/\d{4})/i;
+    const match = this.content.match(pattern);
+    return match ? formatter.format(match[1]) : undefined;
+  }
+
+  extractAmount(): number | undefined {
+    const formatter = FormatterFactory.createFormatter(FormatterType.AMOUNT);
+
+    const pattern = /\*Importo \*(\d+,\d+) EUR\*/i;
+    const match = this.content.match(pattern);
+    return match ? formatter.formatOutflow(match[1]) : undefined;
+  }
+
+  extractPayee(): Payee | undefined {
+    return undefined;
+  }
+}
+
 class WithdrawalTransferExtractor extends BaseExtractor {
   extractDate(): string | undefined {
     const formatter = FormatterFactory.createFormatter(FormatterType.DATE);
@@ -157,6 +179,7 @@ export enum ExtractorType {
   PAYMENT,
   REGULAR,
   INSTANT,
+  RECURRING,
   WITHDRAWAL,
 }
 
@@ -166,6 +189,7 @@ type ExtractorMap = {
   [ExtractorType.INSTANT]: (content: string) => InstantTransferExtractor;
   [ExtractorType.PAYMENT]: (content: string) => PaymentTransferExtractor;
   [ExtractorType.REGULAR]: (content: string) => RegularTransferExtractor;
+  [ExtractorType.RECURRING]: (content: string) => RecurringTransferExtractor;
   [ExtractorType.WITHDRAWAL]: (content: string) => WithdrawalTransferExtractor;
 };
 
@@ -183,6 +207,8 @@ export class ExtractorFactory {
       new CreditTransferExtractor(content),
     [ExtractorType.SALARY]: (content: string) =>
       new SalaryTransferExtractor(content),
+    [ExtractorType.RECURRING]: (content: string) =>
+      new RecurringTransferExtractor(content),
   };
 
   private static isWithdrawalTransfer(content: string): boolean {
@@ -197,6 +223,11 @@ export class ExtractorFactory {
 
   private static isRegularTransfer(content: string): boolean {
     const pattern = /hai inserito un bonifico dal tuo conto/i;
+    return pattern.test(content);
+  }
+
+  private static isRecurringTransfer(content: string): boolean {
+    const pattern = /Il bonifico richiestoè andato a buon fine/i;
     return pattern.test(content);
   }
 
@@ -234,6 +265,11 @@ export class ExtractorFactory {
     const isRegularTransfer = this.isRegularTransfer(content);
     if (isRegularTransfer) {
       return ExtractorType.REGULAR;
+    }
+
+    const isRecurringTransfer = this.isRecurringTransfer(content);
+    if (isRecurringTransfer) {
+      return ExtractorType.RECURRING;
     }
 
     const isCreditTransfer = this.isCreditTransfer(content);

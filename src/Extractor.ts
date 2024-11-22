@@ -133,6 +133,29 @@ class InstantTransferExtractor extends BaseExtractor {
   }
 }
 
+class CBillTransferExtractor extends BaseExtractor {
+  extractDate(): string | undefined {
+    const formatter = FormatterFactory.createFormatter(FormatterType.DATE);
+
+    const pattern =
+      /Data di esecuzione del pagamento \* (\d{2}\/\d{2}\/\d{4})/i;
+    const match = this.content.match(pattern);
+    return match ? formatter.format(match[1]) : undefined;
+  }
+
+  extractAmount(): number | undefined {
+    const formatter = FormatterFactory.createFormatter(FormatterType.AMOUNT);
+
+    const pattern = /\*Importo totale \* (\d+,\d+) EUR \*/i;
+    const match = this.content.match(pattern);
+    return match ? formatter.formatOutflow(match[1]) : undefined;
+  }
+
+  extractPayee(): Payee | undefined {
+    return undefined;
+  }
+}
+
 class CreditTransferExtractor extends BaseExtractor {
   extractDate(): string | undefined {
     const formatter = FormatterFactory.createFormatter(FormatterType.DATE);
@@ -174,6 +197,7 @@ class SalaryTransferExtractor extends BaseExtractor {
 }
 
 export enum ExtractorType {
+  CBILL,
   CREDIT,
   SALARY,
   PAYMENT,
@@ -184,6 +208,7 @@ export enum ExtractorType {
 }
 
 type ExtractorMap = {
+  [ExtractorType.CBILL]: (content: string) => CBillTransferExtractor;
   [ExtractorType.CREDIT]: (content: string) => CreditTransferExtractor;
   [ExtractorType.SALARY]: (content: string) => SalaryTransferExtractor;
   [ExtractorType.INSTANT]: (content: string) => InstantTransferExtractor;
@@ -195,6 +220,8 @@ type ExtractorMap = {
 
 export class ExtractorFactory {
   private static extractors: ExtractorMap = {
+    [ExtractorType.CBILL]: (content: string) =>
+      new CBillTransferExtractor(content),
     [ExtractorType.INSTANT]: (content: string) =>
       new InstantTransferExtractor(content),
     [ExtractorType.PAYMENT]: (content: string) =>
@@ -246,6 +273,11 @@ export class ExtractorFactory {
     return pattern.test(content);
   }
 
+  private static isCBillTransfer(content: string): boolean {
+    const pattern = /Il pagamento del bollettinoè andato a buon fine/i;
+    return pattern.test(content);
+  }
+
   private static getExtractorType(content: string): ExtractorType {
     const isWithdrawal = this.isWithdrawalTransfer(content);
     if (isWithdrawal) {
@@ -280,6 +312,11 @@ export class ExtractorFactory {
     const isSalaryTransfer = this.isSalaryTransfer(content);
     if (isSalaryTransfer) {
       return ExtractorType.SALARY;
+    }
+
+    const isCBillTransfer = this.isCBillTransfer(content);
+    if (isCBillTransfer) {
+      return ExtractorType.CBILL;
     }
 
     throw new Error('Unable to determine extractor type');

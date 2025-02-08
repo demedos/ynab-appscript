@@ -325,9 +325,6 @@ export class ExtractorFactory {
   static createExtractor(content: string): BaseExtractor {
     const type = this.getExtractorType(content);
     const extractorFactory = ExtractorFactory.extractors[type];
-    if (!extractorFactory) {
-      throw new Error('Extractor type not implemented');
-    }
 
     return extractorFactory(content);
   }

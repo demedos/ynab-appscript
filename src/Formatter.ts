@@ -56,11 +56,6 @@ export class FormatterFactory {
   };
 
   static createFormatter<T extends FormatterType>(type: T): FormatterMap[T] {
-    const formatter = FormatterFactory.formatters[type];
-    if (!formatter) {
-      throw new Error('Formatter type not implemented');
-    }
-
-    return formatter as FormatterMap[T];
+    return FormatterFactory.formatters[type];
   }
 }

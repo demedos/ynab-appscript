@@ -22,6 +22,12 @@ export default [
       globals: globals.browser,
     },
   },
+  {
+    files: ['**/*.test.ts', 'jest.setup.js'],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
   pluginJs.configs.recommended,
   ...tseslint.configs.recommended,
 ];

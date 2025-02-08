@@ -123,7 +123,7 @@ class InstantTransferExtractor extends BaseExtractor {
   extractAmount(): number | undefined {
     const formatter = FormatterFactory.createFormatter(FormatterType.AMOUNT);
 
-    const pattern = /\*Importo \* (\d+,\d+) EUR \*/i;
+    const pattern = /\*Importo \* (\d+(?:\.\d+)*,\d+) EUR \*/i;
     const match = this.content.match(pattern);
     return match ? formatter.formatOutflow(match[1]) : undefined;
   }

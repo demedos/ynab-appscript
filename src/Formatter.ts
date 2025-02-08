@@ -7,7 +7,9 @@ class AmountFormatter extends BaseFormatter<number> {
    * The transaction amount in milliunits format
    */
   format = (value: string): number => {
-    return Math.round(parseFloat(value.replace(',', '.')) * 1000);
+    return Math.round(
+      parseFloat(value.replaceAll('.', '').replace(',', '.')) * 1000
+    );
   };
 
   /**

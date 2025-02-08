@@ -132,6 +132,28 @@ describe('Extractors', () => {
     it('should return undefined for payee', () => {
       expect(extractor.extractPayee()).toBeUndefined();
     });
+
+    it('should extract amounts with dots as thousand separators', () => {
+      const sampleContent = `
+        bonifico istantaneo richiesto è andato a buon fine
+        Data di esecuzione * 20/03/2024
+        *Importo * 1.500,00 EUR *
+      `;
+
+      const extractor = ExtractorFactory.createExtractor(sampleContent);
+      expect(extractor.extractAmount()).toBe(-1_500_000);
+    });
+
+    it('should extract amounts with dots as millions separators', () => {
+      const sampleContent = `
+        bonifico istantaneo richiesto è andato a buon fine
+        Data di esecuzione * 20/03/2024
+        *Importo * 1.500.000,00 EUR *
+      `;
+
+      const extractor = ExtractorFactory.createExtractor(sampleContent);
+      expect(extractor.extractAmount()).toBe(-1_500_000_000);
+    });
   });
 
   describe('SalaryTransferExtractor', () => {
